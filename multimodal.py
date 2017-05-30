@@ -6,6 +6,8 @@
 # Similarly, for h * W_2 + b_2
 import tensorflow as tf
 import numpy as np
+import sys
+import argparse
 
 RANDOM_SEED = 42
 tf.set_random_seed(RANDOM_SEED)
@@ -66,7 +68,7 @@ def get_data(datafile, labelfile,seed=21,t=500,delim=',',ty=np.float32):
     print('returning data')
     print train_t.shape
     print train_d.shape
-    return train_d,test_d,train_t,test_t
+    return data, target
 def return_weights(input_size,weight_sizes):
     X = tf.placeholder("float", shape=[None, input_size])
     #y = tf.placeholder("float", shape=[None, output_size])
@@ -80,96 +82,134 @@ def return_weights(input_size,weight_sizes):
         in_layer_size=size
     print len(weights)
     return(X,weights,biases)
+idxs = [[range(0, 495), range(495, 550), range(550, 583)],
+        [range(55, 550), range(0, 55), range(550, 583)],
+        [range(0, 55) + range(110, 550), range(55, 110), range(550, 583)],
+        [range(0, 110) + range(165, 550), range(110, 165), range(550, 583)],
+        [range(0, 165) + range(220, 550), range(165, 220), range(550, 583)],
+        [range(0, 220) + range(275, 550), range(220, 275), range(550, 583)],
+        [range(0, 275) + range(330, 550), range(275, 330), range(550, 583)],
+        [range(0, 330) + range(385, 550), range(330, 385), range(550, 583)],
+        [range(0, 385) + range(440, 550), range(385, 440), range(550, 583)],
+        [range(0, 440) + range(495, 550), range(440, 495), range(550, 583)]
+        ]
 def main():
-    train_MRI_X, test_MRI_X, train_MRI_y, test_MRI_y = get_data('/home/lhd/PycharmProjects/tf_multimodal/data.csv','/home/lhd/PycharmProjects/tf_multimodal/labels.csv')
-    train_SNP_X, test_SNP_X, train_SNP_y, test_SNP_y = get_data('/home/lhd/PycharmProjects/tf_multimodal/data_right.txt','/home/lhd/PycharmProjects/tf_multimodal/labels_right.txt',delim=',',ty=np.int32)
-    # Layer's sizes
-    print train_SNP_X.shape
-    exit()
-    #y_MRI_size = train_MRI_y.shape[1]
-    x_MRI_size = train_MRI_X.shape[1]
-    h_MRI_1_size = 6000
-    h_MRI_2_size = 500
-    h_MRI_3_size = 200
-    y_MRI_size = train_MRI_y.shape[1]
-    #print train_MRI_y.shape
-    #print train_MRI_X.shape
-    print "break"
-    print train_SNP_y.shape
-    print train_SNP_X.shape
-    train_SNP_y = make_one_hot(train_SNP_y,2)
-    test_SNP_y = make_one_hot(test_SNP_y,2)
-    x_SNP_size = train_SNP_X.shape[1]
-    h_SNP_1_size = 3000
-    h_SNP_2_size = 500
-    #h_SNP_3_size = 500
-    h_SNP_4_size = 200
-    y_SNP_size = train_SNP_y.shape[1]
+    pool_MRI_X_train, pool_MRI_y_train = get_data('./data.csv', './labels.csv')
+    pool_SNP_X_train, pool_SNP_y_train = get_data('./data_right.txt', './labels_right.txt', delim=',',
+                                                                ty=np.int32)
 
-    h_output_size = 400
-    y_output_size = train_SNP_y.shape[1]
-    print "here"
-    print y_output_size
-    print x_SNP_size
-    combined_layer_size = 400
-    # Symbols
-    #with tf.device("/gpu:0"):
-    X,weights,biases = return_weights(x_MRI_size,[h_MRI_1_size,h_MRI_2_size,h_MRI_3_size])
-    #,h_SNP_3_size
-    X_SNP,weights_SNP,biases_SNP = return_weights(x_SNP_size,[h_SNP_1_size, h_SNP_2_size,h_SNP_4_size])
-    #X = tf.placeholder("float", shape=[None, x_MRI_size])
-    y = tf.Variable(tf.random_normal([400, y_output_size]))
+    for i in range(len(idxs)):
+        train_MRI_X, test_MRI_X = pool_MRI_X_train[idxs[i][0]],pool_MRI_X_train[idxs[i][1]]
 
-    Y = tf.placeholder("float", [None, 2])
-    #ow = tf.random_normal(h_output_size, stddev=0.1)
-    #out_weights = tf.Variable(ow)
-    #ow_ou = tf.random_normal(y_output_size, stddev=0.1)
-    #y_out = tf.Variable(ow_ou)
-    #out_weights = init_weights(h_output_size,y_output_size)
-    # Weight initializations
-    #w_1 = init_weights((x_MRI_size, h_MRI_1_size))
-    #w_2 = init_weights((h_MRI_1_size,h_MRI_2_size))
-    #w_3 = init_weights((h_MRI_2_size, y_MRI_size))
-    name = "/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_" + str(1000) + "_" + str(
-        300) + "_" + str(1000) + "/model.ckpt.meta"
+        train_MRI_y, test_MRI_y = pool_MRI_y_train[idxs[i][0]],pool_MRI_y_train[idxs[i][1]]
+        train_SNP_X, test_SNP_X, =pool_SNP_X_train[idxs[i][0]],pool_SNP_X_train[idxs[i][1]]
+        train_SNP_y, test_SNP_y = pool_SNP_y_train[idxs[i][0]],pool_SNP_y_train[idxs[i][1]]
+        print train_SNP_X.shape
+        #y_MRI_size = train_MRI_y.shape[1]
+        x_MRI_size = train_MRI_X.shape[1]
+        h_MRI_1_size = 6000
+        h_MRI_2_size = 500
+        h_MRI_3_size = 200
+        y_MRI_size = train_MRI_y.shape[1]
+        #print train_MRI_y.shape
+        #print train_MRI_X.shape
+        print "break"
+        print train_SNP_y.shape
+        print train_SNP_X.shape
+        train_SNP_y = make_one_hot(train_SNP_y,2)
+        test_SNP_y = make_one_hot(test_SNP_y,2)
+        x_SNP_size = train_SNP_X.shape[1]
+        h_SNP_1_size = 3000
+        h_SNP_2_size = 500
+        #h_SNP_3_size = 500
+        h_SNP_4_size = 200
+        y_SNP_size = train_SNP_y.shape[1]
 
-    # Forward propagation
-    sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
-    #saver = tf.train.import_meta_graph(name)
-    #saver.restore(sess,
-    #              tf.train.latest_checkpoint("/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_1000_300_1000/"))
-    #graph = tf.get_default_graph()
-    #weights_SNP[0] = graph.get_tensor_by_name("W1:0")
-    #weights_SNP[1] = graph.get_tensor_by_name("W2:0")
-    out_MRI    = forwardprop(X, weights,biases,dropout=.3)
-    out_SNP = forwardprop(X_SNP,weights_SNP,biases_SNP,dropout=.5)
-    concat = tf.concat([out_MRI,out_SNP],axis=1)
-    yhat = tf.matmul(concat,y)
+        h_output_size = 400
+        y_output_size = train_SNP_y.shape[1]
+        print "here"
+        print y_output_size
+        print x_SNP_size
+        combined_layer_size = 400
+        # Symbols
+        #with tf.device("/gpu:0"):
+        X,weights,biases = return_weights(x_MRI_size,[h_MRI_1_size,h_MRI_2_size,h_MRI_3_size])
+        #,h_SNP_3_size
+        X_SNP,weights_SNP,biases_SNP = return_weights(x_SNP_size,[h_SNP_1_size, h_SNP_2_size,h_SNP_4_size])
+        #X = tf.placeholder("float", shape=[None, x_MRI_size])
+        y = tf.Variable(tf.random_normal([400, y_output_size]))
 
-    predict = tf.argmax(yhat, axis=1)
+        Y = tf.placeholder("float", [None, 2])
+        #ow = tf.random_normal(h_output_size, stddev=0.1)
+        #out_weights = tf.Variable(ow)
+        #ow_ou = tf.random_normal(y_output_size, stddev=0.1)
+        #y_out = tf.Variable(ow_ou)
+        #out_weights = init_weights(h_output_size,y_output_size)
+        # Weight initializations
+        #w_1 = init_weights((x_MRI_size, h_MRI_1_size))
+        #w_2 = init_weights((h_MRI_1_size,h_MRI_2_size))
+        #w_3 = init_weights((h_MRI_2_size, y_MRI_size))
+        name = "/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_" + str(1000) + "_" + str(
+            300) + "_" + str(1000) + "/model.ckpt.meta"
 
-    # Backward propagation
-    cost    = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=Y, logits=yhat))
-    updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
+        # Forward propagation
+        sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        #saver = tf.train.import_meta_graph(name)
+        #saver.restore(sess,
+        #              tf.train.latest_checkpoint("/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_1000_300_1000/"))
+        #graph = tf.get_default_graph()
+        #weights_SNP[0] = graph.get_tensor_by_name("W1:0")
+        #weights_SNP[1] = graph.get_tensor_by_name("W2:0")
+        out_MRI    = forwardprop(X, weights,biases,dropout=.3)
+        out_SNP = forwardprop(X_SNP,weights_SNP,biases_SNP,dropout=.5)
+        concat = tf.concat([out_MRI,out_SNP],axis=1)
+        yhat = tf.matmul(concat,y)
 
-    # Run SGD
-    init = tf.global_variables_initializer()
-    sess.run(init)
-    batch_size = 20
-    for epoch in range(100):
-        # Train with each example
-        for i in range(1,len(train_MRI_X),batch_size):
-            sess.run(updates, feed_dict={X: train_MRI_X[i: i + batch_size],X_SNP:train_SNP_X[i:i+batch_size], Y: train_MRI_y[i: i + batch_size]})
+        predict = tf.argmax(yhat, axis=1)
 
-        train_accuracy = np.mean(np.argmax(train_MRI_y, axis=1) ==
-                                 sess.run(predict, feed_dict={X: train_MRI_X,X_SNP:train_SNP_X, Y: train_MRI_y}))
-        test_accuracy  = np.mean(np.argmax(test_MRI_y, axis=1) ==
-                                 sess.run(predict, feed_dict={X: test_MRI_X, X_SNP:test_SNP_X, Y: test_MRI_y}))
+        # Backward propagation
+        cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=yhat, labels=Y))
 
-        print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
-              % (epoch + 1, 100. * train_accuracy, 100. * test_accuracy))
+        updates = tf.train.GradientDescentOptimizer(0.01).minimize(cost)
+        # Run SGD
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        batch_size = 20
+        for epoch in range(30):
+            # Train with each example
+            for i in range(1,len(train_MRI_X),batch_size):
+                sess.run(updates, feed_dict={X: train_MRI_X[i: i + batch_size],X_SNP:train_SNP_X[i:i+batch_size], Y: train_MRI_y[i: i + batch_size]})
 
-    sess.close()
+            train_accuracy = np.mean(np.argmax(train_MRI_y,axis=1)==
+                                     sess.run(predict, feed_dict={X: train_MRI_X,X_SNP:train_SNP_X, Y: train_MRI_y}))
+            test_accuracy  = np.mean(np.argmax(test_MRI_y,axis=1)==
+                                     sess.run(predict, feed_dict={X: test_MRI_X, X_SNP:test_SNP_X, Y: test_MRI_y}))
+
+            print("Epoch = %d, train accuracy = %.2f%%, test accuracy = %.2f%%"
+                  % (epoch + 1, train_accuracy, test_accuracy))
+
+        sess.close()
+        tf.reset_default_graph()
 
 if __name__ == '__main__':
-    main()
+    global learning_rate, training_iters, batch_size, n_hidden, n_steps
+    n_steps = 100
+    learning_rate = 0.001
+    training_iters = 1000
+    batch_size = 20
+    n_hidden = 1
+    args = sys.argv
+    if len(args) > 0:
+        parse = argparse.ArgumentParser()
+        parse.add_argument('-hidden', action='store',dest='h',help='hidden layers', default=n_hidden)
+        parse.add_argument('-delta', action='store',dest='d',help='learning rate', default=learning_rate)
+        parse.add_argument('-epochs', action='store',dest='e',help='number of epochs', default=training_iters)
+        parse.add_argument('-batch', action='store',dest='b',help='batch size', default=batch_size)
+        results = parse.parse_args()
+        learning_rate = results.d
+        training_iters = results.e
+        batch_size=results.b
+        n_hidden = results.h
+        main()
+    else:
+        main()
