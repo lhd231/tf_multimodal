@@ -1,0 +1,126 @@
+'''
+A Multilayer Perceptron implementation example using TensorFlow library.
+This example is using the MNIST database of handwritten digits
+(http://yann.lecun.com/exdb/mnist/)
+
+Author: Aymeric Damien
+Project: https://github.com/aymericdamien/TensorFlow-Examples/
+'''
+
+from __future__ import print_function
+
+from tensorflow.examples.tutorials.mnist import input_data
+mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
+
+import tensorflow as tf
+
+
+#This returns the model.  It's the set of all functions for the forward pass
+#To note:  matmul only works on 2D tensors
+def multilayer_perceptron(x, weights, biases):
+    for weight,bias in zip(weights,biases):
+        x = tf.add(tf.matmul(x, weight), bias)
+    return x
+
+
+#This will construct the weights and biases automatically.  As well as the input
+#and output tensors.  Then, it builds the functions through the multilayer_perceptron
+#function
+#layer_sizes = list of layer sizes
+def construct_automatically(input_size, output_size,layer_sizes):
+    weights = []
+    biases = []
+
+    #These are the input and output tensors
+    X = tf.placeholder("float", [None, input_size])
+    y = tf.placeholder("float", [None, output_size])
+
+    #These are the weights and biases for the hidden layers
+    for i,layer in enumerate(layer_sizes):
+        weights.append(tf.Variable(tf.random_normal([input_size,layer])))
+        biases.append(tf.Variable(tf.random_normal([layer])))
+        input_size = layer
+
+
+    #We create the weights to the output layer separately
+    #Because I like that style
+    weights.append(tf.Variable(tf.random_normal([input_size,output_size])))
+    biases.append(tf.Variable(tf.random_normal([output_size])))
+
+    #Here we build the functions
+    pred = multilayer_perceptron(X,weights,biases)
+    return X, y, pred
+
+
+'''This will create a session and run it using the MNIST dataset
+NOTES:
+    The session is what starts and guides the computation.
+Before this step, the graph has already been built and consists of all of the
+operations you previously made.  But, when Session.run() is called, it places 
+this graph on the GPU.  The 'init' variable is an initializer op that 
+initializes all of the variables in the graph.
+
+    The subsequent sess.run() calls are used for specific operations.  In this
+case, by using the optimizer and cost functions, we're calling every op 
+from that part of the graph.  So, it can be used for a single operation, such
+as a single matmul, or, as it is in this case, the forward pass for the model
+as well as the backpropagation.
+The docs for this are found here:
+    https://www.tensorflow.org/api_guides/python/train
+All optimizers use the minimize() function to minimize some error function.  
+This minimize function also calls compute_gradients() and apply_gradients().
+
+    In this example, sess.run(...) returns the output from calls to both the
+optimizer and cost.  Only the output from the cost function is printed.  
+'''
+def launch_mnist(x, y, optimizer,cost,init=tf.global_variables_initializer(),training_epochs=100,batch_size=20,display_step=10):
+    with tf.Session() as sess:
+        sess.run(init)
+
+        # Training cycle
+        for epoch in range(training_epochs):
+            avg_cost = 0.
+            total_batch = int(mnist.train.num_examples/batch_size)
+            # Loop over all batches
+            for i in range(total_batch):
+                batch_x, batch_y = mnist.train.next_batch(batch_size)
+                # Run optimization op (backprop) and cost op (to get loss value)
+                _, c = sess.run([optimizer, cost], feed_dict={x: batch_x,
+                                                              y: batch_y})
+                # Compute average loss
+                avg_cost += c / total_batch
+            # Display logs per epoch step
+            if epoch % display_step == 0:
+                print("Epoch:", '%04d' % (epoch+1), "cost=", \
+                    "{:.9f}".format(avg_cost))
+        print("Optimization Finished!")
+
+        # Test model
+        correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
+        # Calculate accuracy
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+        print("Accuracy:", accuracy.eval({x: mnist.test.images, y: mnist.test.labels}))
+
+if __name__ == '__main__':
+    # Parameters
+    learning_rate = 0.001
+    training_epochs = 15
+    batch_size = 100
+    display_step = 1
+
+    # Network Parameters
+    n_hidden_1 = 256  # 1st layer number of features
+    n_hidden_2 = 256  # 2nd layer number of features
+    n_input = 784  # MNIST data input (img shape: 28*28)
+    n_classes = 10  # MNIST total classes (0-9 digits)
+
+    X, y, pred = construct_automatically(784,10,[n_hidden_1,n_hidden_2,n_classes])
+    #pred = multilayer_perceptron(x, w, b)
+
+    # Define loss and optimizer
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+
+    # Initializing the variables
+    init = tf.global_variables_initializer()
+    launch_mnist(X, y, optimizer, cost, init, training_epochs, batch_size, display_step)
