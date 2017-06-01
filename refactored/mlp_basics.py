@@ -47,11 +47,6 @@ def construct_automatically(input_size,layer_sizes, dropout=None, X=None):
         input_size = layer
 
 
-    #We create the weights to the output layer separately
-    #Because I like that style
-    weights.append(tf.Variable(tf.random_normal([input_size,output_size])))
-    biases.append(tf.Variable(tf.random_normal([output_size])))
-
     #Here we build the functions
     pred = multilayer_perceptron(X,weights,biases,dropout)
     return X, y, pred
