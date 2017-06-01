@@ -17,9 +17,11 @@ import tensorflow as tf
 
 #This returns the model.  It's the set of all functions for the forward pass
 #To note:  matmul only works on 2D tensors
-def multilayer_perceptron(x, weights, biases):
+def multilayer_perceptron(x, weights, biases, dropout=None):
     for weight,bias in zip(weights,biases):
         x = tf.add(tf.matmul(x, weight), bias)
+        if dropout != None:
+            x = tf.nn.dropout(x, dropout)
     return x
 
 
@@ -27,13 +29,16 @@ def multilayer_perceptron(x, weights, biases):
 #and output tensors.  Then, it builds the functions through the multilayer_perceptron
 #function
 #layer_sizes = list of layer sizes
-def construct_automatically(input_size, output_size,layer_sizes):
+def construct_automatically(input_size,layer_sizes, dropout=None, X=None):
     weights = []
     biases = []
 
     #These are the input and output tensors
-    X = tf.placeholder("float", [None, input_size])
-    y = tf.placeholder("float", [None, output_size])
+    if X==None:
+        X = tf.placeholder("float", [None, input_size])
+    else:
+        x = X
+    y = tf.placeholder("float", [None, layer_sizes[-1]])
 
     #These are the weights and biases for the hidden layers
     for i,layer in enumerate(layer_sizes):
@@ -48,7 +53,7 @@ def construct_automatically(input_size, output_size,layer_sizes):
     biases.append(tf.Variable(tf.random_normal([output_size])))
 
     #Here we build the functions
-    pred = multilayer_perceptron(X,weights,biases)
+    pred = multilayer_perceptron(X,weights,biases,dropout)
     return X, y, pred
 
 
@@ -114,7 +119,7 @@ if __name__ == '__main__':
     n_input = 784  # MNIST data input (img shape: 28*28)
     n_classes = 10  # MNIST total classes (0-9 digits)
 
-    X, y, pred = construct_automatically(784,10,[n_hidden_1,n_hidden_2,n_classes])
+    X, y, pred = construct_automatically(784,[n_hidden_1,n_hidden_2,n_classes])
     #pred = multilayer_perceptron(x, w, b)
 
     # Define loss and optimizer

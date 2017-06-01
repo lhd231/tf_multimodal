@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import tensorflow as tf
 import numpy as np
 from utilities import *
@@ -34,7 +32,7 @@ returns:
     SL=The final timestep output for the left side
     SR=The final timestep output for the right side
 '''
-def BdRNN(x, weight, bias):
+def BdRNN(x, weight, bias, n_steps, n_hidden):
 
     # Unstack to get a list of 'n_steps' tensors of shape (batch_size, n_input)
     x = tf.unstack(x, n_steps, 1)
@@ -76,8 +74,8 @@ def construct_automatically(n_steps, n_hidden, n_input, **kwargs):
             bias = tf.Variable(tf.random_normal([n_input, n_steps]))
             pred, _, _ = BdRNN(X, weights, bias)
     else:
-        pred, _, _ = BdRNN(X, weights, 0)
-    return x, y, pred
+        pred, _, _ = BdRNN(X, weights, 0,n_steps, n_hidden)
+    return X, y, pred
 
 
 def launch_mnist(x, y, optimizer,cost,init=tf.global_variables_initializer(),training_iters=100,batch_size=20,display_step=10):
