@@ -57,11 +57,11 @@ if __name__ == '__main__':
     dropout = 0.75
     X_img, y_img, output_img = mlp_basics.construct_automatically(n_input_img,[n_hidden_1_img,n_hidden_2_img])
 
-    X_aud, y_aud, output_aud = mlp_basics.construct_automatically(n_input_aud,[n_hidden_1_aud,n_hidden_2_aud], dropout=dropout)
+    X_aud, y_aud, output_aud = mlp_basics.construct_automatically(n_input_aud,[n_hidden_1_aud,n_hidden_2_aud, n_classes], dropout=dropout)
 
     added = tf.add(output_img, output_aud)
 
-    _, y_comb, output_comb = mlp_basics.construct_automatically(n_hidden_1_in, n_classes, [n_hidden_1_out, n_hidden_2_out],X=added)
+    _, y_comb, output_comb = mlp_basics.construct_automatically(n_hidden_1_in, [n_hidden_1_out, n_hidden_2_out],X=added)
 
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=output_comb, labels=y_comb))
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
