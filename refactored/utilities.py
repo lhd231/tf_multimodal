@@ -1,7 +1,13 @@
 import numpy as np
 
-def get_data(datafile,seed=21,delim=','):
-    data   = np.loadtxt(datafile,delimiter=delim,dtype=np.float32)
+def make_one_hot(target,labels):
+    targets = np.zeros((len(target),labels))
+    targets[np.arange(len(target)),target - 1] = 1
+    return targets
+
+
+def get_data(datafile,seed=21,type=np.float32,delim=','):
+    data   = np.loadtxt(datafile,delimiter=delim,dtype=type)
     print('loaded data')
     print data.shape
 
