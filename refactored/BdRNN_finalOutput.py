@@ -44,7 +44,7 @@ def BdRNN(x, weight, bias, n_steps, n_hidden, n_input, name="output", reshape = 
         outputs = rnn.static_bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, x,
                                         dtype=tf.float32)
 
-    y = tf.add(tf.matmul(outputs, weight), bias, name="rnn_output")
+    y = tf.add(tf.matmul(outputs[-1], weight), bias, name=name)
 
     return y, SL, SR
 
@@ -61,11 +61,11 @@ returns:
     pred=The output from the bdRNN
 
 '''
-def construct_automatically(n_steps, n_hidden, n_input, **kwargs):
-    X = tf.placeholder("float", [None, n_steps, n_input], name='absolute_input_rnn')
+def construct_automatically(n_steps, n_hidden, n_input, n_out, **kwargs):
+    X = tf.placeholder("float", [None, n_steps, n_input], name='input_variable')
     y = tf.placeholder("float", [n_steps, None, n_input], name='labels_variable')
 
-    weights = tf.Variable(tf.random_normal([n_steps, 2 * n_hidden, n_input]), name='RNN_weights')
+    weights = tf.Variable(tf.random_normal([2 * n_hidden, n_out]))
 
     #The biases are optional.  Mainly because this first layer can be the output
     #layer
@@ -74,7 +74,7 @@ def construct_automatically(n_steps, n_hidden, n_input, **kwargs):
             bias = tf.Variable(tf.random_normal([n_input, n_steps]))
             pred, _, _ = BdRNN(X, weights, bias, n_steps, n_hidden)
     else:
-        bias = tf.Variable(tf.random_normal([n_input]),name='RNN_bias')
+        bias = tf.Variable(tf.random_normal([n_out]))
         pred, _, _ = BdRNN(X, weights, bias,n_steps, n_hidden, n_input)
     print "returned bdrnn: " + str(n_steps) + "  steps:input  " + str(n_input)
     return X, y, pred

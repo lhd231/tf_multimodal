@@ -23,9 +23,9 @@ output:
     The final output after all forward pass functions
 To note:  matmul only works on 2D tensors
 '''
-def multilayer_perceptron(x, weights, biases, dropout=None):
+def multilayer_perceptron(x, weights, biases, dropout=None, name='out'):
     for weight,bias in zip(weights,biases):
-        x = tf.add(tf.matmul(x, weight), bias)
+        x = tf.add(tf.matmul(x, weight), bias, name=name)
         if dropout != None:
             x = tf.nn.dropout(x, dropout)
     return x
@@ -44,13 +44,13 @@ output:
     y=the label variable
     pred=Model output, or prediction variable
 '''
-def construct_automatically(input_size,layer_sizes, dropout=None, X=None):
+def construct_automatically(input_size,layer_sizes, dropout=None, X=None, name='out',input_name='in'):
     weights = []
     biases = []
 
     #These are the input and output tensors
     if X==None:
-        X = tf.placeholder("float", [None, input_size])
+        X = tf.placeholder("float", [None, input_size], name=input_name)
     else:
         x = X
     y = tf.placeholder("float", [None, layer_sizes[-1]])
@@ -63,7 +63,7 @@ def construct_automatically(input_size,layer_sizes, dropout=None, X=None):
 
 
     #Here we build the functions
-    pred = multilayer_perceptron(X,weights,biases,dropout)
+    pred = multilayer_perceptron(X,weights,biases,dropout,name=name)
     return X, y, pred
 
 

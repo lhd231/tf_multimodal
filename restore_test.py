@@ -1,28 +1,8 @@
 import tensorflow as tf
 import numpy as np
+from utilities import *
 
 
-def get_data(datafile, seed=21,t=500,delim=','):
-    print('entered get data')
-    data   = np.loadtxt(datafile,delimiter=delim,dtype=np.float32)
-    print('loaded data')
-    print data.shape
-    #target = np.loadtxt(labelfile,delimiter=delim,dtype=np.int32)
-    #print('loaded label')
-    #print target.shape
-    # Prepend the column of 1s for bias
-    N, M  = data.shape
-    all_X = np.ones((N, M + 1))
-    all_X[:, 1:] = data
-    np.random.seed(seed)
-    p = np.random.permutation(N)
-    data = data[p]
-    train_d = data[:t]
-    test_d = data[t:]
-    print('returning data')
-    print test_d.shape
-
-    return train_d,test_d#,train_t,test_t
 
 def init_weights(shape):
     """ Weight initialization """
@@ -44,43 +24,42 @@ def return_weights(input_size,weight_sizes):
     print len(weights)
     return(X,weights,biases)
 
-h_layer = 1000
-h_decoder_layer = 1000
-h_middle_layer = 300
+training_iters = 150
+batch_size = 50
+display_step = 10
+
+n_hidden = 10
+learning_rate = .01
 tf.reset_default_graph()
-name = "/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_"+str(h_layer)+"_"+str(h_middle_layer)+"_"+str(h_decoder_layer)+"/model.ckpt.meta"
+folder = "/export/mialab/users/nlewis/tf_multimodal/pretrain_model_UPENN_" + str(n_hidden) + "_" + str(learning_rate)+"/"
+
+name = folder
+
+data_path = "./data_right.txt"
+
+Pool_data, _ = get_data(data_path,delim= ',')
+
+Pool_data = reorganize(Pool_data,100)
+
+n_steps = 100
+n_input = 74
+
+W1 = tf.Variable(tf.random_normal([n_steps, 2 * n_hidden, n_input]),name='RNN_weights_'+str(n_steps))
 #X_train, X_test = get_data('/home/lhd/upenn/genodata_imputed_upenn_selected.txt', delim=' ', t=6500)
 input_size = 7492#X_train.shape[1]
 init = tf.global_variables_initializer()
-weights = tf.random_normal((input_size, h_layer), stddev=0.1)
-biases = tf.random_normal([h_layer])
-weights2 = tf.random_normal((h_layer, h_middle_layer), stddev=0.1)
-biases2 = tf.random_normal([h_middle_layer])
-weights3 = tf.random_normal((h_middle_layer, h_decoder_layer), stddev=0.1)
-biases3 = tf.random_normal([h_decoder_layer])
-weights4 = tf.random_normal((h_decoder_layer, input_size))
-biases4 = tf.random_normal([input_size])
-W1 = tf.Variable(weights, name='W1')
-B1 = tf.Variable(biases, name='B1')
-W2 = tf.Variable(weights2, name='W2')
-B2 = tf.Variable(biases2, name='B2')
-W3 = tf.Variable(weights3, name='W3')
-B3 = tf.Variable(biases3, name='B3')
-W4 = tf.Variable(weights4, name='W4')
-B4 = tf.Variable(biases4, name='B4')
-X, weights, biases = return_weights(input_size, [h_layer, h_middle_layer, h_decoder_layer])
+
 
 #saver = tf.train.Saver()
 with tf.Session() as sess:
-    saver = tf.train.import_meta_graph(name)
-    saver.restore(sess,tf.train.latest_checkpoint("/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_1000_300_1000/"))
-    #saver = tf.train.import_meta_graph('/home/lhd/tensorflow/For_Tensorflow_Multimodal/model.meta')
+
+    saver = tf.train.import_meta_graph(name + "model.ckpt.meta")
+    saver.restore(sess, name + "model.ckpt")
     #saver.restore(sess, tf.train.latest_checkpoint("/home/lhd/tensorflow/For_Tensorflow_Multimodal/model_"+str(h_layer)+"_"+str(h_middle_layer)+"_"+str(h_decoder_layer)+'/'))
     Ops = sess.graph.get_operations()
-    print sess.graph.get_all_collection_keys()
-    print Ops[1].name
-    sess.run(tf.global_variables_initializer())
-    graph = tf.get_default_graph()
-    W1 = graph.get_tensor_by_name("W1:0")
-    print W1.eval()
+
+    batch_x = Pool_data[i:i + 20]
+    batch_y = Pool_data[i:i + cur_batch_size].reshape(n_steps, 20, n_input)
+    sess.run(optimizer, feed_dict={X: batch_x, y: batch_y})
+
     print "complete"

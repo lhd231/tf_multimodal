@@ -151,6 +151,7 @@ def test_mnist():
     # Fit all training data
     batch_size = 200
     n_epochs = 500
+    print np.max(Pool_data_SNP)
     for epoch_i in range(n_epochs):
         for i in range(0,Pool_data_SNP.shape[0] // batch_size,batch_size):
             batch_xs = Pool_data_SNP[i:batch_size]
